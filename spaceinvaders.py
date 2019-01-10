@@ -2,16 +2,27 @@
 
 # Space Invaders
 # Created by Lee Robinson
+# Modified by Felipe Bastos <felipebastosweb@gmail.com>
 
 from pygame import *
 import sys
 from os.path import abspath, dirname
 from random import randint, choice
 
+# HUMAN Movement
+# movement by openCV
+from movetect import DetectHumanMovement
+
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
 IMAGE_PATH = BASE_PATH + '/images/'
 SOUND_PATH = BASE_PATH + '/sounds/'
+
+
+# Window Resolution TODO: Change to full screen
+WIDTH = 800
+HEIGHT = 600
+
 
 # Colors (R, G, B)
 WHITE = (255, 255, 255)
@@ -21,7 +32,7 @@ BLUE = (80, 255, 239)
 PURPLE = (203, 0, 255)
 RED = (237, 28, 36)
 
-SCREEN = display.set_mode((800, 600))
+SCREEN = display.set_mode((WIDTH, HEIGHT))
 FONT = FONT_PATH + 'space_invaders.ttf'
 IMG_NAMES = ['ship', 'mystery',
              'enemy1_1', 'enemy1_2',
@@ -332,6 +343,9 @@ class SpaceInvaders(object):
         # Current enemy starting position
         self.enemyPosition = self.enemyPositionStart
 
+        # human movement start
+        self.human_movement = DetectHumanMovement()
+
     def reset(self, score, lives, newGame=False):
         self.player = Ship()
         self.playerGroup = sprite.Group(self.player)
@@ -433,7 +447,19 @@ class SpaceInvaders(object):
         return evt.type == QUIT or (evt.type == KEYUP and evt.key == K_ESCAPE)
 
     def check_input(self):
-        self.keys = key.get_pressed()
+
+        # HUMAN Movement
+        # self.keys = key.get_pressed()
+        self.keys = list(key.get_pressed())
+        # Face Movement
+        faces = self.human_movement.detect_faces()
+        for face in faces:
+            o = self.human_movement.face_h_position(face, WIDTH)
+            if (o * -1) < 0:
+                self.keys[K_LEFT] = True
+            if (o * -1) > 0:
+                self.keys[K_RIGHT] = True
+
         for e in event.get():
             if self.should_exit(e):
                 sys.exit()
@@ -649,6 +675,11 @@ class SpaceInvaders(object):
                 self.create_main_menu()
 
             elif self.startGame:
+                #
+                # HUMAN Movement
+                # capture e convert to gray image
+                self.human_movement.capture_gray_image()
+                #
                 if len(self.enemies) == 0:
                     currentTime = time.get_ticks()
                     if currentTime - self.gameTimer < 3000:
